@@ -16,10 +16,16 @@ javafx {
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 dependencies {
     implementation("no.tornado:tornadofx:+")
     implementation("com.jcraft:jsch:0.1.55")
+    implementation("org.jetbrains.exposed:exposed-core:0.28.1")
+    implementation("org.jetbrains.exposed:exposed-dao:0.28.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.28.1")
+    implementation("org.xerial:sqlite-jdbc:3.30.1")
     testImplementation(kotlin("test-junit"))
 }
 tasks.withType<KotlinCompile> {
