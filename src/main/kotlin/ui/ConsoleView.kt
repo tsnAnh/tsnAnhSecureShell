@@ -4,11 +4,13 @@ import SSHService
 import com.jcraft.jsch.ChannelExec
 import com.jcraft.jsch.JSch
 import com.jcraft.jsch.Session
+import database.SessionsTable
 import javafx.scene.Parent
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
 import javafx.scene.input.KeyCode
-import org.jetbrains.exposed.dao.Entity
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import tornadofx.View
 import tornadofx.textarea
 import tornadofx.textfield
@@ -19,13 +21,12 @@ import java.io.PipedInputStream
 import java.util.*
 import kotlin.system.exitProcess
 
-
 class ConsoleView : View() {
     private lateinit var tfCommand: TextField
     val path: String by param()
     val username: String by param()
     val hostname: String by param()
-    val idRow: Entity<UUID> by param()
+    val started: Long by param()
     private lateinit var txtConsole: TextArea
     private val jsch = JSch().apply {
         addIdentity(path)
@@ -58,23 +59,13 @@ class ConsoleView : View() {
                     val bfr = BufferedReader(InputStreamReader(channel.inputStream as PipedInputStream))
 
                     channel.connect(5000)
-//                    while (!false) {
-//                        val text = inputStream.readBytes().toString(Charset.defaultCharset())
-//                        transaction {
-//                            SessionsTable.update({ SessionsTable.id eq idRow.id }) {
-//                                with(SqlExpressionBuilder) {
-//                                    it.update(terminalHistory, terminalHistory + text)
-//                                }
-//                            }
-//                        }
-//                        txtConsole.appendText(text)
-//                        if (channel.isClosed) {
-//                            txtConsole.appendText("Done\n")
-//                            break
-//                        }
-//                    }
-                    bfr.forEachLine {
-                        txtConsole.appendText("$it\n")
+                    bfr.forEachLine { s ->
+                        txtConsole.appendText("$s\n")
+                    }
+                    transaction {
+                        SessionsTable.update({ SessionsTable.sessionStarted eq started }) {
+                            it[terminalHistory] = txtConsole.text
+                        }
                     }
                 }
             }
