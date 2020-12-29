@@ -4,7 +4,7 @@ import database.SessionsTable
 import javafx.geometry.Pos
 import javafx.scene.Parent
 import javafx.scene.control.TextField
-import model.Session
+import model.SessionModel
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -18,8 +18,8 @@ class PublicKeyChooserView : View("Choose a public key") {
     private lateinit var tfPublicKeyPath: TextField
     private val listSession = transaction {
         SessionsTable.selectAll().map {
-            Session(
-                it[SessionsTable.terminalHistory],
+            SessionModel(
+                it[SessionsTable.terminalHistory].take(10),
                 it[SessionsTable.sessionStarted],
                 it[SessionsTable.username],
                 it[SessionsTable.hostname]
@@ -28,7 +28,10 @@ class PublicKeyChooserView : View("Choose a public key") {
     }
     override val root: Parent = hbox {
         tableview(listSession.asObservable()) {
-
+            column("History", SessionModel::terminalHistory)
+            column("Session Started", SessionModel::sessionStarted)
+            column("Username", SessionModel::username)
+            column("Hostname", SessionModel::hostname)
         }
         vbox {
             paddingAll = 8
@@ -54,31 +57,36 @@ class PublicKeyChooserView : View("Choose a public key") {
                 alignment = Pos.CENTER_RIGHT
                 button("OK") {
                     action {
-                        if (tfHostName.text.isNotBlank() && tfUsername.text.isNotBlank() && tfPublicKeyPath.text.isNotBlank()) {
-                            val idRow = transaction {
-                                SessionsTable.insertAndGetId {
-                                    it[terminalHistory] = ""
-                                    it[sessionStarted] = Calendar.getInstance().timeInMillis
-                                    it[username] = tfUsername.text
-                                    it[hostname] = tfHostName.text
+                        try {
+                            val started = Calendar.getInstance().timeInMillis
+                            if (tfHostName.text.isNotBlank() && tfUsername.text.isNotBlank() && tfPublicKeyPath.text.isNotBlank()) {
+                                transaction {
+                                    SessionsTable.insertAndGetId {
+                                        it[terminalHistory] = ""
+                                        it[sessionStarted] = started
+                                        it[username] = tfUsername.text
+                                        it[hostname] = tfHostName.text
+                                    }
                                 }
-                            }
-                            find<ConsoleView>(
-                                mapOf(
-                                    ConsoleView::path to tfPublicKeyPath.text,
-                                    ConsoleView::hostname to tfHostName.text,
-                                    ConsoleView::username to tfUsername.text,
-                                    ConsoleView::idRow to idRow
+                                find<ConsoleView>(
+                                    mapOf(
+                                        ConsoleView::path to tfPublicKeyPath.text,
+                                        ConsoleView::hostname to tfHostName.text,
+                                        ConsoleView::username to tfUsername.text,
+                                        ConsoleView::started to started
+                                    )
+                                ).openWindow(owner = null)
+                                close()
+                            } else {
+                                JOptionPane.showMessageDialog(
+                                    null,
+                                    "One of three fields must not blank!",
+                                    "Error",
+                                    JOptionPane.OK_OPTION
                                 )
-                            ).openWindow(owner = null)
-                            close()
-                        } else {
-                            JOptionPane.showMessageDialog(
-                                null,
-                                "One of three fields must not blank!",
-                                "Error",
-                                JOptionPane.OK_OPTION
-                            )
+                            }
+                        } catch (e: Exception) {
+                            println("Error: ${e.localizedMessage}")
                         }
                     }
                 }
