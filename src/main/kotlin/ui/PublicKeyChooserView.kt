@@ -12,7 +12,8 @@ import tornadofx.*
 import java.util.*
 import javax.swing.JOptionPane
 
-class PublicKeyChooserView : View("Choose a public key") {
+class PublicKeyChooserView : View("tsnAnh's Secure Shell: Login") {
+    private lateinit var tfPassword: TextField
     private lateinit var tfUsername: TextField
     private lateinit var tfHostName: TextField
     private lateinit var tfPublicKeyPath: TextField
@@ -41,6 +42,8 @@ class PublicKeyChooserView : View("Choose a public key") {
                 tfUsername = textfield()
                 label("Hostname")
                 tfHostName = textfield()
+                label("Password")
+                tfPassword = textfield()
             }
             hbox {
                 spacing = 4.0
@@ -73,7 +76,8 @@ class PublicKeyChooserView : View("Choose a public key") {
                                         ConsoleView::path to tfPublicKeyPath.text,
                                         ConsoleView::hostname to tfHostName.text,
                                         ConsoleView::username to tfUsername.text,
-                                        ConsoleView::started to started
+                                        ConsoleView::started to started,
+                                        ConsoleView::password to tfPassword.text
                                     )
                                 ).openWindow(owner = null)
                                 close()
